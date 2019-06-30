@@ -1,14 +1,9 @@
 import random
 
-from .map_const import *
-# from .map_saver import ImageSaver
+from .map_basic import *
 
 
 __all__ = ["MapGenerator"]
-
-
-AROUND = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
-CROS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
 
 class Math:
@@ -23,187 +18,6 @@ class Math:
         return m, tile1.y - m * tile1.x
 
 
-class Pos:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __getitem__(self, index):
-        if index == 0:
-            return self.x
-        elif index == 1:
-            return self.y
-        else:
-            raise IndexError
-
-    def __hash__(self):
-        return hash((self.x, self.y))
-
-    def __eq__(self, other):
-        if isinstance(other, Pos):
-            return hash(self) == hash(other)
-        elif isinstance(other, tuple):
-            return self.x == other[0] and self.y == other[1]
-        else:
-            raise TypeError
-
-    def __add__(self, other):
-        if isinstance(other, Pos):
-            return Pos(self.x + other.x, self.y + other.y)
-        elif isinstance(other, tuple):
-            return Pos(self.x + other[0], self.y + other[1])
-        else:
-            raise TypeError
-
-    def __repr__(self):
-        return f"<Pos {self.x},{self.y}>"
-
-    @staticmethod
-    def distance(pos1, pos2):
-        return ((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2) ** 0.5
-
-
-class Room:
-    def __init__(self, tiles, map_):
-        self.tiles = tiles
-        self.room_size = len(tiles)
-        self.main_connected = False
-
-        self.connected = set()
-
-        self.edge_tiles = set()
-        for tile in self.tiles:
-            for d in CROS:
-                pos = tile + d
-
-                if map_.is_in_map(pos):
-                    if map_.get_block(pos) == WALL:
-                        self.edge_tiles.add(tile)
-
-    def __lt__(self, other):
-        return self.room_size < other.room_size
-
-    def is_connected(self, other_room):
-        return other_room in self.connected
-
-    def connect_main(self):
-        self.main_connected = True
-        for room in self.connected:
-            room.main_connected = True
-
-    @staticmethod
-    def connect(ra, rb):
-        if ra.main_connected:
-            rb.connect_main()
-        elif rb.main_connected:
-            ra.connect_main()
-
-        ra.connected.add(rb)
-        rb.connected.add(ra)
-
-
-class Region:
-    @classmethod
-    def scan_regions(cls, map_, block_type):
-        regions = []
-        map_flags = set()
-
-        for y, row in enumerate(map_.coords):
-            for x, block in enumerate(row):
-                pos = Pos(x, y)
-                if pos not in map_flags and block == block_type:
-                    regions.append(cls.scan_blocks(map_, pos))
-
-                    for tile in regions[-1]:
-                        map_flags.add(tile)
-
-        return regions
-
-    @classmethod
-    def scan_blocks(cls, map_, pos):
-        block_type = map_.get_block(pos)
-        blocks = set()
-        coords_unchecked = set([pos])
-
-        while len(coords_unchecked) > 0:
-            block = coords_unchecked.pop()
-            blocks.add(block)
-
-            for vec in CROS:
-                new_pos = block + vec
-                if map_.is_in_map(new_pos):
-                    if map_.get_block(new_pos) == block_type:
-                        if new_pos not in blocks:
-                            coords_unchecked.add(new_pos)
-
-        return blocks
-
-
-class Map:
-    def __init__(self, width, height, coverage, seed):
-        self.width = width
-        self.height = height
-        self.coverage = coverage
-        self.seed = seed
-
-        random.seed(seed)
-
-        self.coords = []
-        self.rooms = []
-        self.passages = []
-
-        for y in range(height):
-            self.coords.append([])
-            for x in range(self.width):
-                if random.randint(1, 100) < coverage:
-                    self.coords[-1].append(WALL)
-                else:
-                    self.coords[-1].append(AIR)
-
-    def __repr__(self):
-        return (f"<Map size={self.width}x{self.height} "
-                f"coverage={self.coverage} seed={self.seed}>")
-
-    def is_in_map(self, pos):
-        if isinstance(pos, Pos):
-            return ((pos.x >= 0) and (pos.x < self.width) and
-                    (pos.y >= 0) and (pos.y < self.height))
-        elif isinstance(pos, tuple):
-            return ((pos[0] >= 0) and (pos[0] < self.width) and
-                    (pos[1] >= 0) and (pos[1] < self.height))
-        else:
-            raise TypeError
-
-    def count_wall(self, pos):
-        count = 0
-
-        for vec in AROUND:
-            new_pos = pos + vec
-
-            if self.is_in_map(new_pos):
-                count += self.get_block(new_pos)
-            else:
-                count += 1
-
-        return count
-
-    def get_block(self, pos):
-        if isinstance(pos, Pos):
-            return self.coords[pos.y][pos.x]
-        elif isinstance(pos, tuple):
-            return self.coords[pos[1]][pos[0]]
-        else:
-            raise TypeError
-
-    def set_block(self, pos, block_type):
-        if isinstance(pos, Pos):
-            self.coords[pos.y][pos.x] = block_type
-        elif isinstance(pos, tuple):
-            self.coords[pos[1]][pos[0]] = block_type
-        else:
-            raise TypeError
-
-
 class MapGenerator:
     @classmethod
     def generate(cls, width, height, coverage=50, seed=None, randomseed=True,
@@ -213,7 +27,8 @@ class MapGenerator:
         if randomseed:
             seed = random.randint(1, 10000)
 
-        map_ = Map(width, height, coverage, seed)
+        map_ = Map(width, height)
+        cls.random_map(map_, coverage, seed)
 
         for _ in range(smooth_times):
             cls.smooth(map_, smooth_pop)
@@ -233,6 +48,20 @@ class MapGenerator:
             cls.smooth(map_, smooth_pop)
 
         return map_
+
+    @classmethod
+    def random_map(cls, map_, coverage, seed):
+        map_.seed = seed
+        map_.coverage = coverage
+
+        random.seed(seed)
+
+        for y in range(map_.height):
+            for x in range(map_.width):
+                if random.randint(1, 100) < coverage:
+                    map_.set_block((x, y), WALL)
+                else:
+                    map_.set_block((x, y), AIR)
 
     @classmethod
     def smooth(cls, map_, smooth_pop, equl_handle=None):
@@ -308,31 +137,29 @@ class MapGenerator:
 
     @classmethod
     def connect_main_room(cls, map_):
-        rla = []
-        rlb = []
+        non_connect = []
+        connected = []
         for r in map_.rooms:
             if r.main_connected:
-                rlb.append(r)
+                connected.append(r)
             else:
-                rla.append(r)
+                non_connect.append(r)
 
-        if len(rla) == 0:
+        if len(non_connect) == 0:
             return
 
-        best_dis = 0
-        best_ra = None  # room a
-        best_rb = None  # room b
-        best_ta = None  # tile a
-        best_tb = None  # tile b
-        connection_found = False
-
-        for ra in rla:
+        for ra in non_connect:
             if ra.main_connected:
                 continue
 
+            best_dis = 0
+            best_ra = None  # room a
+            best_rb = None  # room b
+            best_ta = None  # tile a
+            best_tb = None  # tile b
             connection_found = False
 
-            for rb in rlb:
+            for rb in connected:
                 if ra == rb:
                     continue
 
@@ -346,7 +173,7 @@ class MapGenerator:
                     best_rb = rb
 
             for c_ra in ra.connected:
-                for rb in rlb:
+                for rb in connected:
 
                     dis, ta, tb = cls.find_best_passage(c_ra, rb,
                                                         acceptable_dis=10)
@@ -363,9 +190,9 @@ class MapGenerator:
                 for pos in cls.get_line(best_ta, best_tb):
                     cls.draw_circle(map_, pos, 3, 5)
 
-                rlb.append(best_ra)
+                connected.append(best_ra)
                 for room in best_ra.connected:
-                    rlb.append(room)
+                    connected.append(room)
 
     @classmethod
     def find_best_passage(self, ra, rb, acceptable_dis=-1):

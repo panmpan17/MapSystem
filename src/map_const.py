@@ -1,3 +1,0 @@
-AIR = 0
-WALL = 1
-MARKER = 2
