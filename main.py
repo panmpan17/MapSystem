@@ -1,7 +1,9 @@
 import argparse
-from os.path import join as join_path
+import random
 
-from src import MapGenerator, MapSaver, MapReader
+from os.path import join as join_path
+from src import (MapGenerator, MapSaver, MapReader, PygameRenderer,
+                 Region, AIR, Walker)
 
 
 if __name__ == "__main__":
@@ -22,6 +24,13 @@ if __name__ == "__main__":
         MapSaver.save_image(map_name, map_, block_size=5)
         MapSaver.save_json(map_name, map_)
     else:
-        pygame_img = MapReader.get_pygame_img(map_name)
+        map_ = MapReader.get_map(map_name)
+        img = MapReader.get_pygame_img(map_name)
 
-        pass
+        pos = random.choice(tuple(Region.scan_regions(map_, AIR)[0]))
+        print(pos)
+        walker = Walker(pos)
+
+        renderer = PygameRenderer(img, 5)
+        renderer.add_walker(walker)
+        renderer.run()

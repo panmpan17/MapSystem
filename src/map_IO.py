@@ -1,6 +1,6 @@
 from json import dump as json_dump, load as json_load
 from PIL import Image, ImageDraw
-from .map_basic import WALL, MARKER
+from .map_basic import Map, WALL, MARKER
 from pygame.image import load as pygame_load_img
 
 
@@ -56,5 +56,10 @@ class MapReader:
 
     @staticmethod
     def get_map(file_name):
-        data = json_load(open(file_name) + ".json")
-        
+        data = json_load(open(file_name + ".json"))
+        map_ = Map(data["width"], data["height"])
+        map_.seed = data["seed"]
+        map_.coverage = data["coverage"]
+        map_.coords = data["coords"]
+
+        return map_

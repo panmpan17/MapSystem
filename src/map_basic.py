@@ -1,5 +1,3 @@
-import random
-
 AIR = 0
 WALL = 1
 MARKER = 2
@@ -9,9 +7,22 @@ CROS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
 
 class Pos:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, x, y=None):
+        if isinstance(x, tuple):
+            self.x = x[0]
+            self.y = x[1]
+        else:
+            if y is None:
+                raise ValueError
+
+            self.x = x
+            self.y = y
+
+    def __repr__(self):
+        return f"<Pos {self.x},{self.y}>"
+
+    def __hash__(self):
+        return hash((self.x, self.y))
 
     def __getitem__(self, index):
         if index == 0:
@@ -20,9 +31,6 @@ class Pos:
             return self.y
         else:
             raise IndexError
-
-    def __hash__(self):
-        return hash((self.x, self.y))
 
     def __eq__(self, other):
         if isinstance(other, Pos):
@@ -40,8 +48,51 @@ class Pos:
         else:
             raise TypeError
 
-    def __repr__(self):
-        return f"<Pos {self.x},{self.y}>"
+    def __sub__(self, other):
+        if isinstance(other, Pos):
+            return Pos(self.x - other.x, self.y - other.y)
+        elif isinstance(other, tuple):
+            return Pos(self.x - other[0], self.y - other[1])
+        else:
+            raise TypeError
+
+    def __mul__(self, multiplier):
+        return Pos(self.x * multiplier, self.y * multiplier)
+
+    def __iadd__(self, other):
+        if isinstance(other, Pos):
+            self.x += other.x
+            self.y += other.y
+        elif isinstance(other, tuple):
+            self.x += other[0]
+            self.y += other[1]
+        else:
+            raise TypeError
+
+    def __isub__(self, other):
+        if isinstance(other, Pos):
+            self.x -= other.x
+            self.y -= other.y
+        elif isinstance(other, tuple):
+            self.x -= other[0]
+            self.y -= other[1]
+        else:
+            raise TypeError
+
+    def __imul__(self, multiplier):
+        if isinstance(multiplier, int):
+            self.x *= multiplier
+            self.y *= multiplier
+        else:
+            raise TypeError
+
+    def __ifloordiv__(self, num):
+        if isinstance(num, int):
+            self.x //= num
+            self.y //= num
+            return self
+        else:
+            raise TypeError
 
     @staticmethod
     def distance(pos1, pos2):
