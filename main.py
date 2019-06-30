@@ -11,6 +11,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    map_ = MapGenerator.generate(80, 80, coverage=52, smooth_times=3,
+    map_ = MapGenerator.generate(80, 80, coverage=52, smooth_times=5,
                                  randomseed=False, seed=1, minimal_size=30)
     ImageSaver.save_as_image("resault/test", map_, block_size=5)
