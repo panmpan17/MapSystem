@@ -1,6 +1,7 @@
 import random
 
 from .map_basic import *
+from time import time
 
 
 __all__ = ["MapGenerator"]
@@ -48,6 +49,54 @@ class MapGenerator:
             cls.smooth(map_, smooth_pop)
 
         return map_
+
+    @classmethod
+    def test_generate_speed(cls, width, height, coverage=50, seed=None,
+                            randomseed=True, smooth_times=3, minimal_size=3,
+                            smooth_pop=4, clean_up=True,
+                            clean_up_wall_first=True,
+                            connect_closest_roooms=True,
+                            connect_main_room=True):
+        track_time = {}
+        if randomseed:
+            seed = random.randint(1, 10000)
+
+        map_ = Map(width, height)
+
+        start = time()
+        cls.random_map(map_, coverage, seed)
+        track_time["randomisze"] = time() - start
+
+        for i in range(smooth_times):
+            start = time()
+            cls.smooth(map_, smooth_pop)
+            track_time["smooth-" + str(i)] = time() - start
+
+        if clean_up:
+            start = time()
+            cls.clean_up(map_, minimal_size, clean_up_wall_first)
+            track_time["clean"] = time() - start
+
+        if connect_closest_roooms:
+            start = time()
+            map_.rooms = [Room(region, map_)
+                          for region in Region.scan_regions(map_, AIR)]
+            track_time["search-rooms"] = time() - start
+
+            start = time()
+            cls.connect_closest_rooms(map_)
+            track_time["connect-closest"] = time() - start
+
+            if connect_main_room:
+                start = time()
+                cls.connect_main_room(map_)
+                track_time["connect-main"] = time() - start
+
+            start = time()
+            cls.smooth(map_, smooth_pop)
+            track_time["final-smooth"] = time() - start
+
+        return track_time
 
     @classmethod
     def random_map(cls, map_, coverage, seed):
