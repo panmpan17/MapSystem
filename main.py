@@ -30,7 +30,9 @@ if __name__ == "__main__":
 
     elif args.functions == "testspeed":
         records = []
-        sum_ = {}
+        sum_ = {"type": "sum"}
+        smallest = {"type": "smallest"}
+        biggest = {"type": "biggest"}
 
         for i in range(args.testtime):
             record = MapGenerator.test_generate_speed(
@@ -40,28 +42,40 @@ if __name__ == "__main__":
             for f, v in record.items():
                 if f not in sum_:
                     sum_[f] = v
+                    smallest[f] = v
+                    biggest[f] = v
                 else:
                     sum_[f] += v
+                    if v < smallest[f]:
+                        smallest[f] = v
+                    if v > biggest[f]:
+                        biggest[f] = v
 
+            record["type"] = "map-" + str(i)
             records.append(record)
             print(".", end="", flush=True)
         print()
 
-        average = {}
+        average = {"type": "average"}
         for f, v in sum_.items():
+            if f == "type":
+                continue
+
             average[f] = v / len(records)
 
         with open("result/test.csv", 'w', newline='') as csvfile:
             field = list(records[0].keys())
+            field.insert(0, "type")
             writer = csv.DictWriter(csvfile, fieldnames=field)
 
             writer.writeheader()
             writer.writerow(sum_)
             writer.writerow(average)
+            writer.writerow(smallest)
+            writer.writerow(biggest)
             writer.writerow({})
 
-            for r in records:
-                writer.writerow(r)
+            writer.writerows(records)
 
     else:
         map_ = MapReader.get_map(map_name)
