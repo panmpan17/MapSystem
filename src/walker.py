@@ -1,5 +1,7 @@
-from pprint import pprint
 from .map_basic import CROS, WALL
+
+
+SPEED = 10
 
 
 class Walker:
@@ -10,11 +12,12 @@ class Walker:
 
         self.path = []
         self.path_length = 0
+        self.walk_progress = 0
 
     def set_destination(self, pos):
         self.destination = pos
 
-    def find_path(self, map_):
+    def find_path(self, map_, start=False):
         dis_index = {self.pos: 0}
         uncheck_pos = [self.pos]
         breaked = False
@@ -61,3 +64,16 @@ class Walker:
                     best_next_dis = dis_index[new_pos]
 
             self.path.insert(0, best_next)
+
+        if start:
+            self.walking = True
+
+    def walk(self, tick):
+        self.walk_progress += SPEED / tick
+
+        if self.walk_progress >= 1:
+            self.walk_progress = 0
+            self.pos = self.path.pop(0)
+
+            if len(self.path) == 0:
+                self.walking = False
